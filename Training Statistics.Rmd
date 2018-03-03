@@ -16,6 +16,30 @@ rm(list=ls())
 options(stringsAsFactors = FALSE)
 RActivites <- fromJSON(rawToChar(GET(url = "https://www.strava.com/api/v3/athlete/activities?per_page=80&access_token=738ba7d3a2a53c870f699ae5a297383eef11f537")$content))
 RActivites$start_date_local <- strtrim(RActivites$start_date_local, 10)
+steadyRuns <- grep("steady", RActivites$name, ignore.case = TRUE)
+restRuns <- grep("rest", RActivites$name, ignore.case = TRUE)
+workRuns <- grep("work", RActivites$name, ignore.case = TRUE)
+tempoRuns <- grep("tempo", RActivites$name, ignore.case = TRUE)
+trackRuns <- grep("track", RActivites$name, ignore.case = TRUE)
+longRuns <- grep("Long", RActivites$name, ignore.case = TRUE)
+intenseRuns <- grep("intense", RActivites$name, ignore.case = TRUE)
+WarmupRuns <- grep("warm", RActivites$name, ignore.case = TRUE)
+CooldownRuns <- grep("cool", RActivites$name, ignore.case = TRUE)
+
+RunType <- vector(mode = "character", length = nrow(RActivites))
+for(i in 1:length(RunType)) {
+  if(i %in% steadyRuns) { RunType[[i]] <- "Steady"}
+  else if(i %in% intenseRuns) { RunType[[i]] <- "Intense" }
+  else if(i %in% tempoRuns) { RunType[[i]] <- "Tempo" }
+  else if(i %in% trackRuns) { RunType[[i]] <- "Track" }
+  else if (i %in% longRuns) { RunType[[i]] <- "Long"}
+  else if(i %in% workRuns) { RunType[[i]] <- "Work" }
+  else if(i %in% restRuns) { RunType[[i]] <- "Rest" }
+  else if(i %in% WarmupRuns) { RunType[[i]] <- "Warm-up"}
+  else if(i %in% CooldownRuns) { RunType[[i]] <- "Cool-down"}
+  else { RunType[[i]] <- "Misc"}
+}
+
 dates <- seq(as.Date("2018/2/26"), Sys.Date(), by = "day")
 workoutActivities <- c()
 run1Dist <- c(); run2Dist <- c(); run3Dist <- c(); run4Dist <- c()
@@ -24,13 +48,14 @@ run1Pace <- c(); run2Pace <- c(); run3Pace <- c(); run4Pace <- c()
 for(i in 1:length(dates)) {
   filtered <- RActivites[RActivites$start_date_local == dates[[i]],]$distance
   filteredPaces <- (RActivites[RActivites$start_date_local == dates[[i]],]$moving_time)/filtered/60*1000
+  steadyRuns
   diff <- numeric(4 - length(filtered))
   filtered <- c(filtered, diff)
   filteredPaces <- c(filteredPaces, diff)
   run1Dist[[i]] <- filtered[[1]]; run2Dist[[i]] <- filtered[[2]]; run3Dist[[i]] <- filtered[[3]]; run4Dist[[i]] <- filtered[[4]]
-  run1Pace[[i]] <- paste(floor(filteredPaces[[1]]), ":", str_pad(round((filteredPaces[[1]] - floor(filteredPaces[[1]]))*60), 2, pad = "0"), sep = "")
-  run2Pace[[i]] <- paste(floor(filteredPaces[[2]]), ":", str_pad(round((filteredPaces[[2]] - floor(filteredPaces[[2]]))*60), 2, pad = "0"), sep = "")
-  run3Pace[[i]] <- paste(floor(filteredPaces[[3]]), ":", str_pad(round((filteredPaces[[3]] - floor(filteredPaces[[3]]))*60), 2, pad = "0"), sep = "")
+  run1Pace[[i]] <- paste(floor(filteredPaces[[1]]), ":", str_pad(round((filteredPaces[[1]] - floor(filteredPaces[[1]]))*60), 2, pad = "0"), "/km", sep = "")
+  run2Pace[[i]] <- paste(floor(filteredPaces[[2]]), ":", str_pad(round((filteredPaces[[2]] - floor(filteredPaces[[2]]))*60), 2, pad = "0"), "/km", sep = "")
+  run3Pace[[i]] <- paste(floor(filteredPaces[[3]]), ":", str_pad(round((filteredPaces[[3]] - floor(filteredPaces[[3]]))*60), 2, pad = "0"), "/km", sep = "")
   run4Pace[[i]] <- filteredPaces[[4]]
   workoutActivities[[i]] <- filtered
 }
