@@ -7,6 +7,37 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(httr)
+library(jsonlite)
+library(lubridate)
+library(plotly)
+library(stringr)
+rm(list=ls())
+options(stringsAsFactors = FALSE)
+RActivites <- fromJSON(rawToChar(GET(url = "https://www.strava.com/api/v3/athlete/activities?per_page=80&access_token=738ba7d3a2a53c870f699ae5a297383eef11f537")$content))
+RActivites$start_date_local <- strtrim(RActivites$start_date_local, 10)
+dates <- seq(as.Date("2018/2/22"), Sys.Date(), by = "day")
+workoutActivities <- c()
+run1Dist <- c(); run2Dist <- c(); run3Dist <- c(); run4Dist <- c()
+run1Pace <- c(); run2Pace <- c(); run3Pace <- c(); run4Pace <- c()
+
+for(i in 1:length(dates)) {
+  filtered <- RActivites[RActivites$start_date_local == dates[[i]],]$distance
+  filteredPaces <- (RActivites[RActivites$start_date_local == dates[[i]],]$moving_time)/filtered/60*1000
+  diff <- numeric(4 - length(filtered))
+  filtered <- c(filtered, diff)
+  filteredPaces <- c(filteredPaces, diff)
+  run1Dist[[i]] <- filtered[[1]]; run2Dist[[i]] <- filtered[[2]]; run3Dist[[i]] <- filtered[[3]]; run4Dist[[i]] <- filtered[[4]]
+  run1Pace[[i]] <- paste(floor(filteredPaces[[1]]), ":", str_pad(round((filteredPaces[[1]] - floor(filteredPaces[[1]]))*60), 2, pad = "0"), sep = "")
+  run2Pace[[i]] <- paste(floor(filteredPaces[[2]]), ":", str_pad(round((filteredPaces[[2]] - floor(filteredPaces[[2]]))*60), 2, pad = "0"), sep = "")
+  run3Pace[[i]] <- paste(floor(filteredPaces[[3]]), ":", str_pad(round((filteredPaces[[3]] - floor(filteredPaces[[3]]))*60), 2, pad = "0"), sep = "")
+  run4Pace[[i]] <- filteredPaces[[4]]
+  workoutActivities[[i]] <- filtered
+}
+dates <- as.character(dates)
+dataframe <- data.frame(cbind(dates[c(1:length(dates))], workoutActivities,  run1Dist, run2Dist, run3Dist, run4Dist, run1Pace, run2Pace, run3Pace))
+
+
 ```
 
 ## R Markdown
