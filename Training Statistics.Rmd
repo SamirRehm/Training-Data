@@ -12,10 +12,12 @@ library(jsonlite)
 library(lubridate)
 library(plotly)
 library(stringr)
+library(plyr)
 rm(list=ls())
 options(stringsAsFactors = FALSE)
-RActivites <- fromJSON(rawToChar(GET(url = "https://www.strava.com/api/v3/athlete/activities?per_page=80&access_token=738ba7d3a2a53c870f699ae5a297383eef11f537")$content))
+RActivites <- fromJSON(rawToChar(GET(url = "https://www.strava.com/api/v3/athlete/activities?after=1519601753&per_page=80&access_token=738ba7d3a2a53c870f699ae5a297383eef11f537")$content))
 RActivites$start_date_local <- strtrim(RActivites$start_date_local, 10)
+
 steadyRuns <- grep("steady", RActivites$name, ignore.case = TRUE)
 restRuns <- grep("rest", RActivites$name, ignore.case = TRUE)
 workRuns <- grep("work", RActivites$name, ignore.case = TRUE)
@@ -33,50 +35,38 @@ for(i in 1:length(RunType)) {
   else if(i %in% tempoRuns) { RunType[[i]] <- "Tempo" }
   else if(i %in% trackRuns) { RunType[[i]] <- "Track" }
   else if (i %in% longRuns) { RunType[[i]] <- "Long"}
-  else if(i %in% workRuns) { RunType[[i]] <- "Work" }
+  else if(i %in% workRuns) { RunType[[i]] <- 'Work' }
   else if(i %in% restRuns) { RunType[[i]] <- "Rest" }
   else if(i %in% WarmupRuns) { RunType[[i]] <- "Warm-up"}
   else if(i %in% CooldownRuns) { RunType[[i]] <- "Cool-down"}
   else { RunType[[i]] <- "Misc"}
 }
 
-dates <- seq(as.Date("2018/2/26"), Sys.Date(), by = "day")
-workoutActivities <- c()
-run1Dist <- c(); run2Dist <- c(); run3Dist <- c(); run4Dist <- c()
-run1Pace <- c(); run2Pace <- c(); run3Pace <- c(); run4Pace <- c()
+Pace <- RActivites$moving_time/RActivites$distance/60*1000
+Pace <- paste(floor(Pace), ":", str_pad(round((Pace - floor(Pace))*60), 2, pad = "0"), "/km", sep = "")
 
-for(i in 1:length(dates)) {
-  filtered <- RActivites[RActivites$start_date_local == dates[[i]],]$distance
-  filteredPaces <- (RActivites[RActivites$start_date_local == dates[[i]],]$moving_time)/filtered/60*1000
-  steadyRuns
-  diff <- numeric(4 - length(filtered))
-  filtered <- c(filtered, diff)
-  filteredPaces <- c(filteredPaces, diff)
-  run1Dist[[i]] <- filtered[[1]]; run2Dist[[i]] <- filtered[[2]]; run3Dist[[i]] <- filtered[[3]]; run4Dist[[i]] <- filtered[[4]]
-  run1Pace[[i]] <- paste(floor(filteredPaces[[1]]), ":", str_pad(round((filteredPaces[[1]] - floor(filteredPaces[[1]]))*60), 2, pad = "0"), "/km", sep = "")
-  run2Pace[[i]] <- paste(floor(filteredPaces[[2]]), ":", str_pad(round((filteredPaces[[2]] - floor(filteredPaces[[2]]))*60), 2, pad = "0"), "/km", sep = "")
-  run3Pace[[i]] <- paste(floor(filteredPaces[[3]]), ":", str_pad(round((filteredPaces[[3]] - floor(filteredPaces[[3]]))*60), 2, pad = "0"), "/km", sep = "")
-  run4Pace[[i]] <- filteredPaces[[4]]
-  workoutActivities[[i]] <- filtered
-}
-dates <- as.character(dates)
-dataframe <- data.frame(cbind(dates[c(1:length(dates))], workoutActivities,  run1Dist, run2Dist, run3Dist, run4Dist, run1Pace, run2Pace, run3Pace))
-
+RunningData <- data.frame(RActivites$start_date_local, RActivites$distance, RActivites$moving_time, RunType, Pace)
+RunningData <- rename(RunningData, c("RActivites.start_date_local" = "Date", "RActivites.distance" = "Distance", "RActivites.moving_time" = "Time"))
 ```
 
 ## Training Plan for Sub-19 Minute 5K
 
 Special Thanks to Tanner Geary, UBC Thunderbirds Track And Field, for putting together the training plan!
 
-```{r Week1, echo = FALSE}
+```{r Week1, echo = FALSE, warning = FALSE}
 trainingWeeks <- htmltools::tagList()
+dates <- seq(as.Date("2018/2/26"), Sys.Date(), by = "day")
 
-for (i in 1:1) {
-
-trainingWeeks[[i]] <- plot_ly(dataframe, width = 850, height = 450, x = ~V1, y = ~run1Dist, type = "bar", text = ~run1Pace, textposition = 'auto') %>%
-  add_trace(y = ~run2Dist, text = ~run2Pace, textposition = 'auto') %>%
-  add_trace(y = ~run3Dist, text = ~run3Pace) %>%
-  layout(title = paste("Training - Week 1 -", signif(sum(c(sum(run1Dist), sum(run2Dist), sum(run3Dist), sum(run4Dist)))/1000, 4), "km"), barmode = "stack", yaxis = list(title = "Distance"), xaxis = list(title = "Date"))
-}
-trainingWeeks
+p <- plot_ly(x = dates, y = integer(length(dates)), type = "bar") %>%
+  
+  add_trace(x = RunningData[RunningData$RunType == "Work",]$Date, y = RunningData[RunningData$RunType == "Work",]$Distance, text = RunningData[RunningData$RunType == "Work",]$Pace, textposition = 'auto',  marker = list(line = list(color = 'rgb(8,48,107)', width = 3.5))) %>%
+  
+    add_trace(x = RunningData[RunningData$RunType=="Warm-up",]$Date,y=RunningData[RunningData$RunType == "Warm-up",]$Distance, text = RunningData[RunningData$RunType == "Warm-up",]$Pace, textposition = 'auto', marker = list(line = list(color = 'rgb(8,48,107)', width = 3.5))) %>%
+  
+  add_trace(x = RunningData[RunningData$RunType == "Steady",]$Date, y=RunningData[RunningData$RunType == "Steady",]$Distance, text = RunningData[RunningData$RunType == "Steady",]$Pace, textposition = 'auto', marker = list(line = list(color = 'rgb(8,48,107)', width = 3.5))) %>%
+  
+  add_trace(x = RunningData[RunningData$RunType == "Rest",]$Date, y = RunningData[RunningData$RunType == "Rest",]$Distance, text = RunningData[RunningData$RunType == "Rest",]$Pace, textposition = 'auto', marker = list(line = list(color = 'rgb(8,48,107)', width = 3.5))) %>%
+  
+  layout(barmode = "stack",  title = paste("Training Plan Week 1 -", signif(sum(RunningData$Distance)/1000, 4), "km"))
+p
 ```
