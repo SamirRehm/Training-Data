@@ -45,8 +45,8 @@ for(i in 1:length(RunType)) {
 Pace <- RActivites$moving_time/RActivites$distance/60*1000
 Pace <- paste("<b>", floor(Pace), ":", str_pad(round((Pace - floor(Pace))*60), 2, pad = "0"), "/km", "</b>", sep = "")
 
-RunningData <- data.frame(RActivites$start_date_local, RActivites$distance, RActivites$moving_time, RunType, Pace)
-RunningData <- rename(RunningData, c("RActivites.start_date_local" = "Date", "RActivites.distance" = "Distance", "RActivites.moving_time" = "Time"))
+RunningData <- data.frame(RActivites$start_date_local, RActivites$distance/1000.0, RActivites$moving_time, RunType, Pace)
+RunningData <- rename(RunningData, c("RActivites.start_date_local" = "Date", "RActivites.distance.1000" = "Distance", "RActivites.moving_time" = "Time"))
 ```
 
 ## Training Plan for Sub-19 Minute 5K
@@ -61,14 +61,20 @@ p <- plot_ly(width = 850, height = 500, type = "bar", hoverinfo = "all") %>%
   
   add_trace(x = dates, y = integer(length(dates)), showlegend = F) %>%
   
-  add_trace(x = RunningData[RunningData$RunType == "Work",]$Date, y = RunningData[RunningData$RunType == "Work",]$Distance, text = RunningData[RunningData$RunType == "Work",]$Pace, textposition = 'auto',  marker = list(line = list(color = 'rgb(8,48,107)', width = 2), color = 'rgba(100,100, 255,0.7)'), name = "Run to or from work", hoverinfo = "none") %>%
+  add_trace(x = RunningData[RunningData$RunType == "Work",]$Date, y = RunningData[RunningData$RunType == "Work",]$Distance, text = RunningData[RunningData$RunType == "Work",]$Pace, textposition = 'auto',  marker = list(line = list(color = 'rgb(8,48,107)', width = 2), color = 'rgba(160,70, 255,0.6)'), name = "Run to or from work") %>%
   
-    add_trace(x = RunningData[RunningData$RunType=="Warm-up",]$Date,y=RunningData[RunningData$RunType == "Warm-up",]$Distance, text = RunningData[RunningData$RunType == "Warm-up",]$Pace, textposition = 'auto', marker = list(color = 'rgba(100,255,100,0.7)', line = list(color = 'rgb(8,48,107)', width = 2)), name = "Warm-up Run") %>%
+    add_trace(x = RunningData[RunningData$RunType=="Warm-up",]$Date,y=RunningData[RunningData$RunType == "Warm-up",]$Distance, text = RunningData[RunningData$RunType == "Warm-up",]$Pace, textposition = 'auto', marker = list(color = 'rgba(100,255,100,0.6)', line = list(color = 'rgb(8,48,107)', width = 2)), name = "Warm-up Run") %>%
   
-  add_trace(x = RunningData[RunningData$RunType == "Steady",]$Date, y=RunningData[RunningData$RunType == "Steady",]$Distance, text = RunningData[RunningData$RunType == "Steady",]$Pace, textposition = 'auto', marker = list(color = 'rgba(255, 100, 100, 0.7)', line = list(color = 'rgb(8,48,107)', width = 2)), name = "Steady-State Run") %>%
+  add_trace(x = RunningData[RunningData$RunType == "Steady",]$Date, y=RunningData[RunningData$RunType == "Steady",]$Distance, text = RunningData[RunningData$RunType == "Steady",]$Pace, textposition = 'auto', marker = list(color = 'rgba(255, 100, 100, 0.6)', line = list(color = 'rgb(8,48,107)', width = 2)), name = "Steady-State Run") %>%
   
-  add_trace(x = RunningData[RunningData$RunType == "Rest",]$Date, y = RunningData[RunningData$RunType == "Rest",]$Distance, text = RunningData[RunningData$RunType == "Rest",]$Pace, textposition = 'auto', marker = list(color = 'rgba(255, 255, 100, 0.7)', line = list(color = 'rgb(8,48,107)', width = 2)), name = "Recovery Run") %>%
+  add_trace(x = RunningData[RunningData$RunType == "Rest",]$Date, y = RunningData[RunningData$RunType == "Rest",]$Distance, text = RunningData[RunningData$RunType == "Rest",]$Pace, textposition = 'auto', marker = list(color = 'rgba(255, 255, 100, 0.6)', line = list(color = 'rgb(8,48,107)', width = 2)), name = "Recovery Run") %>%
   
-  layout(barmode = "stack",  title = paste("Training Plan Week 1 -", signif(sum(RunningData$Distance)/1000, 4), "km"), xaxis = list(title = "Date"))
+  add_trace(x = RunningData[RunningData$RunType == "Track",]$Date, y = RunningData[RunningData$RunType == "Track",]$Distance, text = RunningData[RunningData$RunType == "Track",]$Pace, textposition = 'auto', marker = list(color = 'rgba(255, 100, 255, 0.6)', line = list(color = 'rgb(8,48,107)', width = 2)), name = "Track Intervals") %>%
+  
+  add_trace(x = RunningData[RunningData$RunType == "Long",]$Date, y = RunningData[RunningData$RunType == "Long",]$Distance, text = RunningData[RunningData$RunType == "Long",]$Pace, textposition = 'auto', marker = list(color = 'rgba(50, 150, 255, 0.6)', line = list(color = 'rgb(8,48,107)', width = 2)), name = "Long Run") %>%
+  
+  add_trace(x = RunningData[RunningData$RunType == "Cool-down",]$Date, y = RunningData[RunningData$RunType == "Cool-down",]$Distance, text = RunningData[RunningData$RunType == "Cool-down",]$Pace, textposition = 'auto', marker = list(color = 'rgba(100, 255, 255, 0.6)', line = list(color = 'rgb(8,48,107)', width = 2)), name = "Cool-down") %>%
+  
+  layout(barmode = "stack",  title = paste("Training Plan Week 1 -", signif(sum(RunningData$Distance), 4), "km"), xaxis = list(title = "Date"), yaxis = list(title = "Distance (km)"))
 p
 ```
