@@ -2,7 +2,9 @@
 title: "Training Statistics"
 author: "Samir Rehmtulla"
 date: "February 26, 2018"
-output: html_document
+output: 
+  html_document:
+    self_contained: no
 ---
 
 ```{r setup, include=FALSE}
@@ -13,6 +15,10 @@ library(lubridate)
 library(plotly)
 library(stringr)
 library(plyr)
+library(leaflet)
+library(sp)
+library(data.table)
+library(googleway)
 rm(list=ls())
 options(stringsAsFactors = FALSE)
 RActivites <- fromJSON(rawToChar(GET(url = "https://www.strava.com/api/v3/athlete/activities?after=1519601753&per_page=80&access_token=738ba7d3a2a53c870f699ae5a297383eef11f537")$content))
@@ -27,6 +33,17 @@ longRuns <- grep("Long", RActivites$name, ignore.case = TRUE)
 intenseRuns <- grep("intense", RActivites$name, ignore.case = TRUE)
 WarmupRuns <- grep("warm", RActivites$name, ignore.case = TRUE)
 CooldownRuns <- grep("cool", RActivites$name, ignore.case = TRUE)
+
+ids <- RActivites$id
+urlP1 <- rep("https://www.strava.com/api/v3/activities/", length(ids))
+urlP2 <- rep("?access_token=738ba7d3a2a53c870f699ae5a297383eef11f537", length(ids))
+PolylineURLs <- paste(urlP1, ids, urlP2, sep="")
+Polylines <- c()
+for(i in 1:length(PolylineURLs)) {
+  Activity <- fromJSON(rawToChar(GET(url = PolylineURLs[[i]])$content))$map
+  if(is.null(Activity$polyline))
+  { Polylines[[i]] <- "" } else { Polylines[[i]] <- Activity$polyline}
+}
 
 RunType <- vector(mode = "character", length = nrow(RActivites))
 for(i in 1:length(RunType)) {
@@ -45,7 +62,7 @@ for(i in 1:length(RunType)) {
 Pace <- RActivites$moving_time/RActivites$distance/60*1000
 Pace <- paste("<b>", floor(Pace), ":", str_pad(round((Pace - floor(Pace))*60), 2, pad = "0"), "/km", "</b>", sep = "")
 
-RunningData <- data.frame(RActivites$start_date_local, RActivites$distance/1000.0, RActivites$moving_time, RunType, Pace)
+RunningData <- data.frame(RActivites$start_date_local, RActivites$distance/1000.0, RActivites$moving_time, RunType, Pace, Polylines)
 RunningData <- rename(RunningData, c("RActivites.start_date_local" = "Date", "RActivites.distance.1000" = "Distance", "RActivites.moving_time" = "Time"))
 ```
 
@@ -77,4 +94,9 @@ p <- plot_ly(width = 850, height = 500, type = "bar", hoverinfo = "all") %>%
   
   layout(barmode = "stack",  title = paste("Training Plan Week 1 -", signif(sum(RunningData$Distance), 4), "km"), xaxis = list(title = "Date"), yaxis = list(title = "Distance (km)"))
 p
+
+map_key <- 'AIzaSyC2_ZQpyvUMYMm2FZh3HouwqavsnF8QRG4'
+x <- google_map(key = map_key, data = RunningData) %>%
+  add_polylines(polyline = "Polylines", stroke_colour = "#00FFFF")
+x
 ```
