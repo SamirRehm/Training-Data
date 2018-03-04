@@ -2,7 +2,9 @@
 title: "Training Statistics"
 author: "Samir Rehmtulla"
 date: "February 26, 2018"
-output: 
+always_allow_html: yes
+output:
+  word_document: default
   html_document:
     self_contained: no
 ---
@@ -64,17 +66,21 @@ Pace <- paste("<b>", floor(Pace), ":", str_pad(round((Pace - floor(Pace))*60), 2
 
 RunningData <- data.frame(RActivites$start_date_local, RActivites$distance/1000.0, RActivites$moving_time, RunType, Pace, Polylines)
 RunningData <- rename(RunningData, c("RActivites.start_date_local" = "Date", "RActivites.distance.1000" = "Distance", "RActivites.moving_time" = "Time"))
+RunningData$Day <- weekdays(as.Date(RunningData$Date))
 ```
 
 ## Training Plan for Sub-19 Minute 5K
 
-Special Thanks to Tanner Geary, UBC Thunderbirds Track And Field, for putting together the training plan!
+Special Thanks to Tanner Geary, UBC Thunderbirds Track And Field, for putting together the training plan!  
+
+&nbsp;
+
 
 ```{r Week1, echo = FALSE, warning = FALSE}
 trainingWeeks <- htmltools::tagList()
 dates <- seq(as.Date("2018/2/26"), Sys.Date(), by = "day")
 
-p <- plot_ly(width = 850, height = 500, type = "bar", hoverinfo = "all") %>%
+p <- plot_ly(width = 850, height = 515, type = "bar", hoverinfo = "all") %>%
   
   add_trace(x = dates, y = integer(length(dates)), showlegend = F) %>%
   
@@ -92,11 +98,25 @@ p <- plot_ly(width = 850, height = 500, type = "bar", hoverinfo = "all") %>%
   
   add_trace(x = RunningData[RunningData$RunType == "Cool-down",]$Date, y = RunningData[RunningData$RunType == "Cool-down",]$Distance, text = RunningData[RunningData$RunType == "Cool-down",]$Pace, textposition = 'auto', marker = list(color = 'rgba(100, 255, 255, 0.6)', line = list(color = 'rgb(8,48,107)', width = 2)), name = "Cool-down") %>%
   
-  layout(barmode = "stack",  title = paste("Training Plan Week 1 -", signif(sum(RunningData$Distance), 4), "km"), xaxis = list(title = "Date"), yaxis = list(title = "Distance (km)"))
+  layout(barmode = "stack",  title = paste("<b>Training Plan Week 1 -", signif(sum(RunningData$Distance), 4), "km", "</b>"), xaxis = list(title = "Date"), yaxis = list(title = "Distance (km)"))
 p
-
-map_key <- 'AIzaSyC2_ZQpyvUMYMm2FZh3HouwqavsnF8QRG4'
-x <- google_map(key = map_key, data = RunningData) %>%
-  add_polylines(polyline = "Polylines", stroke_colour = "#00FFFF")
-x
 ```
+\newline 
+&nbsp;  
+\newline 
+&nbsp;  
+\newline
+&nbsp;  
+\newline 
+&nbsp;  
+\newline
+
+## Week 1 Route Plots
+```{r, echo = FALSE, fig.align="center"}
+map_key <- 'AIzaSyC2_ZQpyvUMYMm2FZh3HouwqavsnF8QRG4'
+lstPalette <- list(stroke_colour = colorRampPalette(c("#FF0000", "#FF7F00", "#FFFF00", "#00FF00", "#0000FF" , "#9400D3")))
+google_map(key = map_key, data = RunningData, width = 1000) %>%
+  add_polylines(polyline = "Polylines", stroke_colour = "Day", stroke_weight = 4, stroke_opacity = 0.8, legend = T, palette = lstPalette)
+
+```
+Note - Track Intervals are excluded as they were tracked manually
