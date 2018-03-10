@@ -3,7 +3,7 @@ title: "Training Statistics"
 author: "Samir Rehmtulla"
 date: "February 26, 2018"
 output:
-  html_document: default
+  rmarkdown::github_document
 always_allow_html: yes
 ---
 
